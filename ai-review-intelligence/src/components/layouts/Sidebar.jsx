@@ -31,7 +31,7 @@ const Sidebar = () => {
     <div
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
-      className={`fixed top-0 left-0 h-screen
+      className={`fixed top-0 left-0 h-screen z-50
       backdrop-blur-lg bg-black/60
       border-r border-white/10
       transition-all duration-300

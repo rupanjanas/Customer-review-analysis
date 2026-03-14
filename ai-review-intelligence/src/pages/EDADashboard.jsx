@@ -71,7 +71,7 @@ className="bg-black/60 border ml-16 border-white/10 px-3 py-2 rounded text-white
 
 {/* TREND */}
 
-<div className="bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-xl mb-10 hover:border-green-400 transition">
+<div className="bg-black/40 ml-16 backdrop-blur-md border border-white/10 p-6 rounded-xl mb-10 hover:border-green-400 transition">
 
 <LineChart data={trendData}/>
 
@@ -79,7 +79,7 @@ className="bg-black/60 border ml-16 border-white/10 px-3 py-2 rounded text-white
 
 {/* CHART GRID */}
 
-<div className="grid grid-cols-2 gap-8">
+<div className="ml-16 grid grid-cols-2 gap-8">
 
 {/* RATING */}
 
