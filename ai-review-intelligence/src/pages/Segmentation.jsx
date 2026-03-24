@@ -101,8 +101,8 @@ grid:{color:"rgba(255,255,255,0.04)"}
 };
 
 return (
-
-<div className="ml-16 p-10 text-white bg-[#020617] min-h-screen space-y-10">
+<div className="bg-[#020617]">
+<div className="ml-16 p-10 text-white  min-h-screen space-y-10">
 
 {/* TITLE */}
 
@@ -197,6 +197,7 @@ Cluster 3 – Quality Seekers
 
 </div>
 
+</div>
 </div>
 
 );

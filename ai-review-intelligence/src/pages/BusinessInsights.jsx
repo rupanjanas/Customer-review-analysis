@@ -21,67 +21,95 @@ BarElement
 const BusinessInsights = () => {
 
 const complaintData = {
-labels: ["Electronics", "Clothing", "Home Appliances", "Beauty"],
+labels: ["Electronics", "Clothing", "Home", "Beauty"],
 datasets: [
 {
-label: "Complaints",
 data: [40, 25, 20, 15],
 backgroundColor: [
-"#6366F1",
-"#22D3EE",
-"#F59E0B",
-"#EF4444"
+"#22c55e",
+"#14b8a6",
+"#84cc16",
+"#4ade80"
 ],
-},
-],
+borderWidth: 0
+}
+]
 };
 
 const revenueImpact = {
 labels: ["Cluster 1", "Cluster 2", "Cluster 3", "Cluster 4"],
 datasets: [
 {
-label: "Estimated Revenue ($)",
+label: "Revenue",
 data: [12000, 18000, 9000, 15000],
-backgroundColor: "#6366F1",
+backgroundColor: "#22c55e"
+}
+]
+};
+
+const chartOptions = {
+
+plugins:{
+legend:{
+labels:{color:"#e5e7eb"}
+}
 },
-],
+
+scales:{
+x:{
+ticks:{color:"#9ca3af"},
+grid:{color:"rgba(255,255,255,0.04)"}
+},
+y:{
+ticks:{color:"#9ca3af"},
+grid:{color:"rgba(255,255,255,0.04)"}
+}
+}
+
 };
 
 return (
+<div className="bg-[#020617]">
+<div className="ml-16 p-10 text-white  min-h-screen space-y-10">
 
-<div className="ml-64 p-10">
+{/* TITLE */}
 
-<h1 className="text-3xl font-bold mb-10">
+<h1 className="text-3xl font-bold text-green-400">
 Business Insights
 </h1>
 
-{/* Insight Cards */}
+<p className="text-gray-400 max-w-2xl">
+Transform model outputs into actionable business decisions by identifying
+high-value customer segments, key problem areas, and revenue opportunities.
+</p>
 
-<div className="grid grid-cols-4 gap-6 mb-10">
+{/* KPI INSIGHTS */}
 
-<div className="bg-card p-6 rounded-xl">
-<p className="text-gray-400">Most Valuable Segment</p>
-<h2 className="text-xl font-bold text-highlight">
+<div className="grid grid-cols-4 gap-6">
+
+<div className="bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-xl hover:border-green-400 transition">
+<p className="text-gray-400 text-sm">Most Valuable Segment</p>
+<h2 className="text-xl font-bold text-green-400">
 Electronics Enthusiasts
 </h2>
 </div>
 
-<div className="bg-card p-6 rounded-xl">
-<p className="text-gray-400">Highest Complaint Category</p>
+<div className="bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-xl hover:border-green-400 transition">
+<p className="text-gray-400 text-sm">Highest Complaint Category</p>
 <h2 className="text-xl font-bold text-red-400">
 Electronics
 </h2>
 </div>
 
-<div className="bg-card p-6 rounded-xl">
-<p className="text-gray-400">Positive Sentiment</p>
+<div className="bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-xl hover:border-green-400 transition">
+<p className="text-gray-400 text-sm">Positive Sentiment</p>
 <h2 className="text-xl font-bold text-green-400">
 78%
 </h2>
 </div>
 
-<div className="bg-card p-6 rounded-xl">
-<p className="text-gray-400">Revenue Risk</p>
+<div className="bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-xl hover:border-green-400 transition">
+<p className="text-gray-400 text-sm">Revenue Risk</p>
 <h2 className="text-xl font-bold text-yellow-400">
 Medium
 </h2>
@@ -89,66 +117,86 @@ Medium
 
 </div>
 
-{/* Charts */}
+{/* CHARTS */}
 
-<div className="grid grid-cols-2 gap-10">
+<div className="grid grid-cols-2 gap-8">
 
-<div className="bg-card p-6 rounded-xl">
+<div className="bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-xl hover:border-green-400 transition">
 
-<h2 className="mb-4 text-xl">
+<h2 className="mb-4 text-lg text-green-400">
 Complaint Distribution
 </h2>
 
-<Pie data={complaintData} />
+<Pie data={complaintData} options={chartOptions}/>
 
 </div>
 
-<div className="bg-card p-6 rounded-xl">
+<div className="bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-xl hover:border-green-400 transition">
 
-<h2 className="mb-4 text-xl">
-Revenue Impact by Customer Segment
+<h2 className="mb-4 text-lg text-green-400">
+Revenue by Customer Segment
 </h2>
 
-<Bar data={revenueImpact} />
+<Bar data={revenueImpact} options={chartOptions}/>
 
 </div>
 
 </div>
 
-{/* Key Insights */}
+{/* STRATEGIC INSIGHTS */}
 
-<div className="bg-card p-6 rounded-xl mt-10">
+<div className="bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-xl hover:border-green-400 transition">
 
-<h2 className="text-xl mb-4">
-Key Business Insights
+<h2 className="text-xl mb-6 text-green-400">
+Strategic Business Insights
 </h2>
 
-<ul className="list-disc ml-6 space-y-2 text-gray-300">
+<ul className="space-y-3 text-gray-300 text-sm">
 
 <li>
-Electronics category generates the highest complaint volume.
+Electronics category generates the highest complaint volume → priority for improvement.
 </li>
 
 <li>
-Cluster 2 users contribute the highest revenue potential.
+Cluster 2 contributes the highest revenue → focus marketing efforts here.
 </li>
 
 <li>
-Battery issues and product durability are the most frequent complaints.
+Battery and durability issues are recurring → product redesign opportunity.
 </li>
 
 <li>
-Improving product quality in Electronics could increase customer retention.
+Improving Electronics quality can significantly increase customer retention.
 </li>
 
 <li>
-Positive sentiment spikes during seasonal sale periods.
+Positive sentiment peaks during seasonal sales → optimize promotions timing.
 </li>
 
 </ul>
 
 </div>
 
+{/* RECOMMENDATIONS */}
+
+<div className="bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-xl hover:border-green-400 transition">
+
+<h2 className="text-xl mb-4 text-green-400">
+Recommended Actions
+</h2>
+
+<ul className="space-y-3 text-gray-300 text-sm">
+
+<li>Improve battery performance in electronics products</li>
+<li>Target high-value customer segments with premium offers</li>
+<li>Enhance product durability for budget-conscious users</li>
+<li>Align marketing campaigns with high sentiment periods</li>
+
+</ul>
+
+</div>
+
+</div>
 </div>
 
 );
