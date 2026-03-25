@@ -9,6 +9,7 @@ import {
   LinearScale,
   BarElement
 } from "chart.js";
+import ChartDataLabels from "chartjs-plugin-datalabels";
 
 ChartJS.register(
   ArcElement,
@@ -16,7 +17,8 @@ ChartJS.register(
   Legend,
   CategoryScale,
   LinearScale,
-  BarElement
+  BarElement,
+  ChartDataLabels
 );
 
 const BusinessInsights = () => {
@@ -32,7 +34,6 @@ const BusinessInsights = () => {
       try {
         const res = await fetch("http://127.0.0.1:8000/categories");
         const data = await res.json();
-        // API returns { total_categories, categories: [...] }
         setCategoriesData(data.categories || []);
       } catch (err) {
         console.error(err);
@@ -54,7 +55,6 @@ const BusinessInsights = () => {
     setError("");
   };
 
-  // Get super_clusters for the selected category
   const selectedCategoryObj = categoriesData.find(
     (c) => c.display_name === selectedCategory
   );
@@ -95,31 +95,39 @@ const BusinessInsights = () => {
     ]
   };
 
-  const revenueImpact = {
-    labels: recommendationData?.recommendations?.map((_, i) => `Action ${i + 1}`) || [],
-    datasets: [
-      {
-        label: "Impact Score",
-        data: recommendationData?.recommendations?.map((_, i) => (i + 1) * 10) || [],
-        backgroundColor: "#22c55e"
-      }
-    ]
+  const chartOptions = {
+    plugins: {
+      legend: { labels: { color: "#e5e7eb" } },
+      datalabels: { display: false }
+    },
+    scales: {
+      x: { ticks: { color: "#9ca3af" }, grid: { color: "rgba(255,255,255,0.04)" } },
+      y: { ticks: { color: "#9ca3af" }, grid: { color: "rgba(255,255,255,0.04)" } }
+    }
   };
 
-  const chartOptions = {
+  const pieOptions = {
     plugins: {
       legend: {
         labels: { color: "#e5e7eb" }
-      }
-    },
-    scales: {
-      x: {
-        ticks: { color: "#9ca3af" },
-        grid: { color: "rgba(255,255,255,0.04)" }
       },
-      y: {
-        ticks: { color: "#9ca3af" },
-        grid: { color: "rgba(255,255,255,0.04)" }
+      tooltip: {
+        callbacks: {
+          label: (context) => {
+            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+            const pct = total > 0 ? ((context.parsed / total) * 100).toFixed(1) : 0;
+            return ` ${context.label}: ${pct}%`;
+          }
+        }
+      },
+      datalabels: {
+        color: "#fff",
+        font: { weight: "bold", size: 13 },
+        formatter: (value, context) => {
+          const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+          if (total === 0) return "";
+          return ((value / total) * 100).toFixed(1) + "%";
+        }
       }
     }
   };
@@ -138,7 +146,6 @@ const BusinessInsights = () => {
         {/* SELECTORS */}
         <div className="bg-black/40 p-6 rounded-xl border space-y-4">
 
-          {/* Category Dropdown — uses display_name from API */}
           <select
             value={selectedCategory}
             onChange={handleCategoryChange}
@@ -154,7 +161,6 @@ const BusinessInsights = () => {
             ))}
           </select>
 
-          {/* Segment Dropdown — uses super_cluster_name from selected category */}
           <select
             value={selectedSegment}
             onChange={handleSegmentChange}
@@ -182,18 +188,19 @@ const BusinessInsights = () => {
           {error && <p className="text-red-400 text-sm">{error}</p>}
         </div>
 
-        {/* Only render below sections if data is loaded */}
         {recommendationData && (
           <>
-            {/* KPI INSIGHTS */}
+            {/* KPI CARDS */}
             <div className="grid grid-cols-4 gap-6">
               <div className="bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-xl hover:border-green-400 transition">
-                <p className="text-gray-400 text-sm">Most Valuable Segment</p>
+                <p className="text-gray-400 text-sm">Selected Segment</p>
                 <h2 className="text-xl font-bold text-green-400">{recommendationData.segment}</h2>
               </div>
               <div className="bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-xl hover:border-green-400 transition">
-                <p className="text-gray-400 text-sm">Highest Complaint Category</p>
-                <h2 className="text-xl font-bold text-red-400">{recommendationData.category}</h2>
+                <p className="text-gray-400 text-sm">Category</p>
+                <h2 className="text-xl font-bold text-blue-400">
+                  {recommendationData.category.replace(/_/g, " ")}
+                </h2>
               </div>
               <div className="bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-xl hover:border-green-400 transition">
                 <p className="text-gray-400 text-sm">Total Reviews</p>
@@ -201,21 +208,24 @@ const BusinessInsights = () => {
               </div>
               <div className="bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-xl hover:border-green-400 transition">
                 <p className="text-gray-400 text-sm">Overall Health</p>
-                <h2 className="text-xl font-bold text-yellow-400">{recommendationData?.overall_health?.charAt(0).toUpperCase() + recommendationData?.overall_health?.slice(1)}</h2>
+                <h2 className={`text-xl font-bold capitalize ${
+                  recommendationData.overall_health === "positive" ? "text-green-400"
+                  : recommendationData.overall_health === "negative" ? "text-red-400"
+                  : "text-yellow-400"
+                }`}>
+                  {recommendationData.overall_health}
+                </h2>
               </div>
             </div>
 
-            {/* CHARTS */}
-            <div className="grid grid-cols-2 gap-8">
-              <div className="bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-xl hover:border-green-400 transition">
-                <h2 className="mb-4 text-lg text-green-400">Complaint Distribution</h2>
-                <Pie data={complaintData} options={chartOptions} />
-              </div>
-              <div className="bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-xl hover:border-green-400 transition">
-                <h2 className="mb-4 text-lg text-green-400">Revenue by Customer Segment</h2>
-                <Bar data={revenueImpact} options={chartOptions} />
-              </div>
-            </div>
+            {/* PIE CHART */}
+           {/* PIE CHART */}
+<div className="flex justify-center">
+  <div className="bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-xl hover:border-green-400 transition w-96">
+    <h2 className="mb-4 text-lg text-green-400 text-center">Sentiment Distribution</h2>
+    <Pie data={complaintData} options={pieOptions} />
+  </div>
+</div>
 
             {/* STRATEGIC INSIGHTS */}
             <div className="bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-xl hover:border-green-400 transition">

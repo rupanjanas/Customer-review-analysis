@@ -69,13 +69,19 @@ const SentimentModel = () => {
     }
   };
 
-  // --- Static chart data (model overview) ---
+  // --- Chart data: empty when no result, populated after prediction ---
+
+  const sentimentLabels = result
+    ? Object.keys(result.predictions ? { positive: 0, negative: 0, neutral: 0 } : {})
+    : [];
+
+  // Accuracy chart — always visible as model overview (static)
   const accuracyData = {
     labels: ["Logistic Regression", "SVM", "Random Forest", "XGBoost"],
     datasets: [{
       label: "Accuracy",
-      data: [0.82, 0.85, 0.88, 0.90],
-      backgroundColor: "#22c55e"
+      data: result ? [0.82, 0.85, 0.88, 0.90] : [0, 0, 0, 0],
+      backgroundColor: result ? "#22c55e" : "rgba(255,255,255,0.05)"
     }]
   };
 
@@ -83,9 +89,9 @@ const SentimentModel = () => {
     labels: [0, 0.2, 0.4, 0.6, 0.8, 1],
     datasets: [{
       label: "ROC Curve",
-      data: [0, 0.35, 0.6, 0.75, 0.9, 1],
-      borderColor: "#22c55e",
-      backgroundColor: "rgba(34,197,94,0.15)",
+      data: result ? [0, 0.35, 0.6, 0.75, 0.9, 1] : [0, 0, 0, 0, 0, 0],
+      borderColor: result ? "#22c55e" : "rgba(255,255,255,0.1)",
+      backgroundColor: result ? "rgba(34,197,94,0.15)" : "rgba(255,255,255,0.02)",
       tension: 0.4,
       fill: true
     }]
@@ -95,8 +101,8 @@ const SentimentModel = () => {
     labels: ["Precision", "Recall", "F1 Score"],
     datasets: [{
       label: "Score",
-      data: [0.88, 0.87, 0.88],
-      backgroundColor: "#14b8a6"
+      data: result ? [0.88, 0.87, 0.88] : [0, 0, 0],
+      backgroundColor: result ? "#14b8a6" : "rgba(255,255,255,0.05)"
     }]
   };
 
@@ -104,7 +110,20 @@ const SentimentModel = () => {
     plugins: { legend: { labels: { color: "#e5e7eb" } } },
     scales: {
       x: { ticks: { color: "#9ca3af" }, grid: { color: "rgba(255,255,255,0.04)" } },
-      y: { ticks: { color: "#9ca3af" }, grid: { color: "rgba(255,255,255,0.04)" } }
+      y: {
+        min: 0,
+        max: 1,
+        ticks: { color: "#9ca3af" },
+        grid: { color: "rgba(255,255,255,0.04)" }
+      }
+    }
+  };
+
+  const rocChartOptions = {
+    ...chartOptions,
+    scales: {
+      ...chartOptions.scales,
+      y: { ...chartOptions.scales.y, min: 0, max: 1 }
     }
   };
 
@@ -123,11 +142,11 @@ const SentimentModel = () => {
           using supervised machine learning models trained on labeled data.
         </p>
 
-        {/* LIVE PREDICTION DEMO */}
+        {/* LIVE PREDICTION INPUT */}
         <div className="bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-xl hover:border-green-400 transition space-y-4">
           <h2 className="text-xl text-green-400">Live Review Predictor</h2>
           <p className="text-gray-400 text-sm">
-            Run a review through the full ML + LLM pipeline — category, cluster, topic, sentiment, and business recommendation.
+            Run a review through the full ML + LLM pipeline to populate model metrics below.
           </p>
 
           <input
@@ -139,7 +158,7 @@ const SentimentModel = () => {
           />
 
           <textarea
-            placeholder="Review text e.g. 'I bought this electronic device and it completely stopped working after just 2 days...'"
+            placeholder="Review text e.g. 'I bought this device and it completely stopped working after 2 days...'"
             value={reviewText}
             onChange={(e) => setReviewText(e.target.value)}
             rows={4}
@@ -157,18 +176,37 @@ const SentimentModel = () => {
           {error && <p className="text-red-400 text-sm">{error}</p>}
         </div>
 
-        {/* PREDICTION RESULTS */}
+        {/* MODEL OVERVIEW — charts hidden/empty until prediction runs */}
+        <div className="space-y-2">
+          <h2 className="text-2xl font-bold text-green-400">Model Overview</h2>
+          <p className="text-gray-400 text-sm">
+            {result
+              ? "Benchmark performance of classifiers used across the pipeline."
+              : "Run a prediction above to reveal model performance charts."}
+          </p>
+        </div>
+
+        {/* PLACEHOLDER HINT when no result yet */}
+        {!result && (
+          <div className="border border-dashed border-white/10 rounded-xl p-10 text-center text-gray-600 text-sm">
+            Charts and metrics will appear here after you run a prediction.
+          </div>
+        )}
+
+        {/* ALL CHARTS + METRICS — only shown after prediction */}
         {result && (
           <>
-            {/* Sentiment badge + classifications */}
+            {/* PREDICTION KPI CARDS */}
             <div className="grid grid-cols-4 gap-6">
               <div className={`border p-6 rounded-xl ${sentimentClass}`}>
-                <p className="text-gray-400 text-sm">Sentiment</p>
+                <p className="text-sm opacity-60 mb-1">Sentiment</p>
                 <h2 className="text-2xl font-bold capitalize">{result.predictions.sentiment}</h2>
               </div>
               <div className="bg-black/40 border border-white/10 p-6 rounded-xl">
                 <p className="text-gray-400 text-sm">Category</p>
-                <h2 className="text-xl font-bold text-green-400">{result.predictions.category}</h2>
+                <h2 className="text-xl font-bold text-green-400">
+                  {result.predictions.category.replace(/_/g, " ")}
+                </h2>
               </div>
               <div className="bg-black/40 border border-white/10 p-6 rounded-xl">
                 <p className="text-gray-400 text-sm">Segment</p>
@@ -180,7 +218,7 @@ const SentimentModel = () => {
               </div>
             </div>
 
-            {/* Topic context */}
+            {/* TOPIC SUMMARY */}
             {result.predictions.topic_summary && (
               <div className="bg-black/40 border border-white/10 p-6 rounded-xl">
                 <h2 className="text-lg text-green-400 mb-2">Topic Summary</h2>
@@ -191,128 +229,124 @@ const SentimentModel = () => {
               </div>
             )}
 
-            {/* LLM Interpretation */}
+            {/* LLM INTERPRETATION */}
             <div className="bg-black/40 border border-white/10 p-6 rounded-xl space-y-4">
               <h2 className="text-xl text-green-400">LLM Interpretation</h2>
-
+              {[
+                ["Review Summary", result.llm_interpretation.review_summary, "text-gray-200"],
+                ["Sentiment Explanation", result.llm_interpretation.sentiment_explanation, "text-gray-200"],
+                ["Business Recommendation", result.llm_interpretation.business_recommendation, "text-green-300"],
+                ["CS Action", result.llm_interpretation.cs_action, "text-blue-300"]
+              ].map(([label, value, cls]) => (
+                <div key={label}>
+                  <p className="text-gray-400 text-xs uppercase mb-1">{label}</p>
+                  <p className={`text-sm ${cls}`}>{value}</p>
+                </div>
+              ))}
               <div>
-                <p className="text-gray-400 text-xs uppercase mb-1">Review Summary</p>
-                <p className="text-gray-200 text-sm">{result.llm_interpretation.review_summary}</p>
-              </div>
-
-              <div>
-                <p className="text-gray-400 text-xs uppercase mb-1">Sentiment Explanation</p>
-                <p className="text-gray-200 text-sm">{result.llm_interpretation.sentiment_explanation}</p>
-              </div>
-
-              <div>
-                <p className="text-gray-400 text-xs uppercase mb-1">Business Recommendation</p>
-                <p className="text-gray-200 text-sm">{result.llm_interpretation.business_recommendation}</p>
-              </div>
-
-              <div>
-                <p className="text-gray-400 text-xs uppercase mb-1">CS Action</p>
-                <p className="text-gray-200 text-sm">{result.llm_interpretation.cs_action}</p>
-              </div>
-
-              <div>
-                <p className="text-gray-400 text-xs uppercase mb-1">Priority</p>
-                <p className={`text-sm font-bold capitalize ${PRIORITY_COLORS[result.llm_interpretation.priority] || "text-gray-300"}`}>
+                <p className="text-gray-400 text-xs uppercase mb-2">Priority</p>
+                <span className={`text-xs font-bold uppercase px-3 py-1 rounded-full border ${
+                  result.llm_interpretation.priority === "high"
+                    ? "border-red-500/40 bg-red-500/10 text-red-400"
+                    : result.llm_interpretation.priority === "medium"
+                    ? "border-yellow-500/40 bg-yellow-500/10 text-yellow-400"
+                    : "border-green-500/40 bg-green-500/10 text-green-400"
+                }`}>
                   {result.llm_interpretation.priority}
-                </p>
+                </span>
               </div>
             </div>
 
-            {/* Segment Context */}
+            {/* SEGMENT CONTEXT */}
             <div className="bg-black/40 border border-white/10 p-6 rounded-xl space-y-4">
               <h2 className="text-xl text-green-400">Segment Context</h2>
-
               <div>
                 <p className="text-gray-400 text-xs uppercase mb-1">Segment Health</p>
-                <p className="text-gray-200 text-sm">{result.segment_context.segment_health}</p>
+                <p className={`text-sm font-bold capitalize ${
+                  result.segment_context.segment_health === "positive" ? "text-green-400"
+                  : result.segment_context.segment_health === "negative" ? "text-red-400"
+                  : "text-yellow-400"
+                }`}>{result.segment_context.segment_health}</p>
               </div>
-
               <div>
                 <p className="text-gray-400 text-xs uppercase mb-1">Batch Recommendation</p>
-                <p className="text-gray-200 text-sm">{result.segment_context.batch_recommendation}</p>
+                <p className="text-sm text-green-300">{result.segment_context.batch_recommendation}</p>
               </div>
-
               <div>
-                <p className="text-gray-400 text-xs uppercase mb-1">Opportunities</p>
-                <ul className="list-disc list-inside space-y-1 text-gray-300 text-sm">
+                <p className="text-gray-400 text-xs uppercase mb-2">Opportunities</p>
+                <ul className="space-y-2">
                   {result.segment_context.segment_opportunities?.map((op, i) => (
-                    <li key={i}>{op}</li>
+                    <li key={i} className="flex items-start gap-2 text-sm text-gray-300">
+                      <span className="text-green-400 mt-0.5">→</span>{op}
+                    </li>
                   ))}
                 </ul>
               </div>
             </div>
+
+            {/* ACCURACY CHART */}
+            <div className="bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-xl hover:border-green-400 transition">
+              <h2 className="text-xl mb-4 text-green-400">Model Accuracy Comparison</h2>
+              <Bar data={accuracyData} options={chartOptions} />
+            </div>
+
+            {/* ROC CURVE */}
+            <div className="bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-xl hover:border-green-400 transition">
+              <h2 className="text-xl mb-4 text-green-400">ROC Curve</h2>
+              <Line data={rocData} options={rocChartOptions} />
+            </div>
+
+            {/* PRECISION / RECALL */}
+            <div className="bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-xl hover:border-green-400 transition">
+              <h2 className="text-xl mb-4 text-green-400">Precision / Recall / F1</h2>
+              <Bar data={prData} options={chartOptions} />
+            </div>
+
+            {/* CONFUSION MATRIX */}
+            <div className="bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-xl hover:border-green-400 transition">
+              <h2 className="text-xl mb-6 text-green-400">Confusion Matrix</h2>
+              <div className="grid grid-cols-2 gap-4 text-center">
+                <div className="bg-green-500/20 border border-green-500 p-6 rounded-lg">
+                  <p className="text-green-400">True Positive</p>
+                  <p className="text-2xl font-bold">320</p>
+                </div>
+                <div className="bg-yellow-500/20 border border-yellow-500 p-6 rounded-lg">
+                  <p className="text-yellow-400">False Positive</p>
+                  <p className="text-2xl font-bold">45</p>
+                </div>
+                <div className="bg-red-500/20 border border-red-500 p-6 rounded-lg">
+                  <p className="text-red-400">False Negative</p>
+                  <p className="text-2xl font-bold">38</p>
+                </div>
+                <div className="bg-blue-500/20 border border-blue-500 p-6 rounded-lg">
+                  <p className="text-blue-400">True Negative</p>
+                  <p className="text-2xl font-bold">297</p>
+                </div>
+              </div>
+            </div>
+
+            {/* METRICS TABLE */}
+            <div className="bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-xl hover:border-green-400 transition">
+              <h2 className="text-xl mb-4 text-green-400">Evaluation Metrics</h2>
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="text-gray-400 border-b border-white/10">
+                    <th className="p-2">Metric</th>
+                    <th className="p-2">Score</th>
+                  </tr>
+                </thead>
+                <tbody className="text-gray-300">
+                  {[["Accuracy", "0.90"], ["Precision", "0.88"], ["Recall", "0.87"], ["F1 Score", "0.88"]].map(([metric, score]) => (
+                    <tr key={metric} className="border-b border-white/10">
+                      <td className="p-2">{metric}</td>
+                      <td className="p-2 text-green-400">{score}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </>
         )}
-
-        {/* MODEL OVERVIEW — static charts below */}
-        <h2 className="text-2xl font-bold text-green-400 pt-4">Model Overview</h2>
-        <p className="text-gray-400 text-sm -mt-6">
-          Benchmark performance of classifiers used across the pipeline.
-        </p>
-
-        <div className="bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-xl hover:border-green-400 transition">
-          <h2 className="text-xl mb-4 text-green-400">Model Accuracy Comparison</h2>
-          <Bar data={accuracyData} options={chartOptions} />
-        </div>
-
-        <div className="bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-xl hover:border-green-400 transition">
-          <h2 className="text-xl mb-4 text-green-400">ROC Curve</h2>
-          <Line data={rocData} options={chartOptions} />
-        </div>
-
-        <div className="bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-xl hover:border-green-400 transition">
-          <h2 className="text-xl mb-4 text-green-400">Precision / Recall / F1</h2>
-          <Bar data={prData} options={chartOptions} />
-        </div>
-
-        {/* CONFUSION MATRIX */}
-        <div className="bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-xl hover:border-green-400 transition">
-          <h2 className="text-xl mb-6 text-green-400">Confusion Matrix</h2>
-          <div className="grid grid-cols-2 gap-4 text-center">
-            <div className="bg-green-500/20 border border-green-500 p-6 rounded-lg">
-              <p className="text-green-400">True Positive</p>
-              <p className="text-2xl font-bold">320</p>
-            </div>
-            <div className="bg-yellow-500/20 border border-yellow-500 p-6 rounded-lg">
-              <p className="text-yellow-400">False Positive</p>
-              <p className="text-2xl font-bold">45</p>
-            </div>
-            <div className="bg-red-500/20 border border-red-500 p-6 rounded-lg">
-              <p className="text-red-400">False Negative</p>
-              <p className="text-2xl font-bold">38</p>
-            </div>
-            <div className="bg-blue-500/20 border border-blue-500 p-6 rounded-lg">
-              <p className="text-blue-400">True Negative</p>
-              <p className="text-2xl font-bold">297</p>
-            </div>
-          </div>
-        </div>
-
-        {/* METRICS TABLE */}
-        <div className="bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-xl hover:border-green-400 transition">
-          <h2 className="text-xl mb-4 text-green-400">Evaluation Metrics</h2>
-          <table className="w-full text-left">
-            <thead>
-              <tr className="text-gray-400 border-b border-white/10">
-                <th className="p-2">Metric</th>
-                <th className="p-2">Score</th>
-              </tr>
-            </thead>
-            <tbody className="text-gray-300">
-              {[["Accuracy", "0.90"], ["Precision", "0.88"], ["Recall", "0.87"], ["F1 Score", "0.88"]].map(([metric, score]) => (
-                <tr key={metric} className="border-b border-white/10">
-                  <td className="p-2">{metric}</td>
-                  <td className="p-2 text-green-400">{score}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
 
       </div>
     </div>
