@@ -201,7 +201,7 @@ const BusinessInsights = () => {
               </div>
               <div className="bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-xl hover:border-green-400 transition">
                 <p className="text-gray-400 text-sm">Overall Health</p>
-                <h2 className="text-xl font-bold text-yellow-400">{recommendationData.overall_health}</h2>
+                <h2 className="text-xl font-bold text-yellow-400">{recommendationData?.overall_health?.charAt(0).toUpperCase() + recommendationData?.overall_health?.slice(1)}</h2>
               </div>
             </div>
 
