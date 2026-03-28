@@ -1,147 +1,290 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import KpiCard from "../components/cards/KpiCard";
 import BarChart from "../components/charts/BarChart";
 import PieChart from "../components/charts/PieChart";
-import LineChart from "../components/charts/LineChart";
 
 const EDADashboard = () => {
+  const [categoriesData, setCategoriesData] = useState([]);
+  const [segmentsData, setSegmentsData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-const [timeFilter,setTimeFilter] = useState("Monthly");
+  useEffect(() => {
+    const fetchAll = async () => {
+      try {
+        const [catRes, segRes] = await Promise.all([
+          fetch("http://127.0.0.1:8000/categories"),
+          fetch("http://127.0.0.1:8000/segments")
+        ]);
+        if (!catRes.ok || !segRes.ok) throw new Error("Failed to fetch");
+        const catData = await catRes.json();
+        const segData = await segRes.json();
+        setCategoriesData(catData.categories || []);
+        setSegmentsData(segData.segments || []);
+      } catch (err) {
+        console.error(err);
+        setError("Failed to load data from server.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAll();
+  }, []);
 
-const ratingData = {
-labels:["1","2","3","4","5"],
-values:[200,400,800,1600,2200]
-}
+  // --- /categories derived ---
 
-const categoryData = {
-labels:["Electronics","Clothing","Home","Beauty"],
-values:[3200,2100,1800,1500]
-}
+  const totalReviews = categoriesData.reduce(
+    (sum, cat) => sum + (cat.total_reviews || 0), 0
+  );
 
-const trendData = {
-labels:["Jan","Feb","Mar","Apr","May","Jun"],
-values:[800,900,1200,1500,1700,2000]
-}
+  const topCategory = categoriesData.reduce(
+    (top, cat) => (!top || cat.total_reviews > top.total_reviews ? cat : top),
+    null
+  );
 
-const wordData = {
-labels:["battery","price","quality","delivery","design"],
-values:[1200,980,870,760,690]
-}
+  const allClusters = categoriesData.flatMap((cat) =>
+    (cat.super_clusters || []).map((sc) => ({
+      name: sc.super_cluster_name,
+      reviews: sc.total_reviews,
+      health: sc.overall_health,
+      sentiment: sc.sentiment_dist || {}
+    }))
+  );
 
-return (
+  // Global sentiment from /categories
+  const globalSentiment = categoriesData.reduce((acc, cat) => {
+    cat.super_clusters?.forEach((sc) => {
+      Object.entries(sc.sentiment_dist || {}).forEach(([key, val]) => {
+        acc[key] = (acc[key] || 0) + val;
+      });
+    });
+    return acc;
+  }, {});
 
-<div className=" p-10 text-white bg-[#020617] min-h-screen">
+  const totalSentimentCount = Object.values(globalSentiment).reduce((a, b) => a + b, 0);
+  const positivePct = totalSentimentCount > 0
+    ? (((globalSentiment["positive"] || 0) / totalSentimentCount) * 100).toFixed(1)
+    : "—";
+  const negativePct = totalSentimentCount > 0
+    ? (((globalSentiment["negative"] || 0) / totalSentimentCount) * 100).toFixed(1)
+    : "—";
 
-<h1 className="ml-16 text-3xl font-bold mb-8 text-green-400">
-Exploratory Data Analysis
-</h1>
+  // Segment health
+  const healthEntries = Object.entries(
+    allClusters.reduce((acc, sc) => {
+      const h = sc.health || "unknown";
+      acc[h] = (acc[h] || 0) + 1;
+      return acc;
+    }, {})
+  );
 
-{/* KPI CARDS */}
+  // --- /segments derived ---
 
-<div className="ml-16 grid grid-cols-4 gap-6 mb-10">
+  // All topics across all segments, aggregated by name
+  const topicMap = segmentsData.reduce((acc, seg) => {
+    seg.topics?.forEach((t) => {
+      if (!acc[t.topic_name]) {
+        acc[t.topic_name] = {
+          count: 0,
+          positive: 0,
+          negative: 0,
+          neutral: 0
+        };
+      }
+      acc[t.topic_name].count += t.review_count || 0;
+      acc[t.topic_name].positive += t.sentiment_distribution?.positive || 0;
+      acc[t.topic_name].negative += t.sentiment_distribution?.negative || 0;
+      acc[t.topic_name].neutral += t.sentiment_distribution?.neutral || 0;
+    });
+    return acc;
+  }, {});
 
-<KpiCard title="Total Reviews" value="12,580" />
-<KpiCard title="Average Rating" value="4.2 ⭐" />
-<KpiCard title="Positive Sentiment" value="78%" />
-<KpiCard title="Top Category" value="Electronics" />
+  // Top 8 topics by review count — replaces "word frequency"
+  const top8Topics = Object.entries(topicMap)
+    .sort((a, b) => b[1].count - a[1].count)
+    .slice(0, 8);
 
-</div>
+  const topicFreqData = {
+    labels: top8Topics.map(([name]) => name),
+    values: top8Topics.map(([, v]) => v.count)
+  };
 
-{/* FILTER */}
+  // Topic sentiment — positive vs negative for top 6 topics
+  const top6Topics = top8Topics.slice(0, 6);
+  const topicSentimentPositive = {
+    labels: top6Topics.map(([name]) => name),
+    values: top6Topics.map(([, v]) => v.positive)
+  };
+  const topicSentimentNegative = {
+    labels: top6Topics.map(([name]) => name),
+    values: top6Topics.map(([, v]) => v.negative)
+  };
 
-<div className="ml-16 flex justify-between items-center mb-6">
+  // Top 6 segments by reviews
+  const top6Clusters = [...allClusters]
+    .sort((a, b) => b.reviews - a.reviews)
+    .slice(0, 6);
 
-<h2 className="text-xl font-semibold text-green-400">
-Review Trends
-</h2>
+  // --- Chart data ---
 
-<select
-value={timeFilter}
-onChange={(e)=>setTimeFilter(e.target.value)}
-className="bg-black/60 border ml-16 border-white/10 px-3 py-2 rounded text-white"
->
+  const categoryData = {
+    labels: categoriesData.map((c) => c.display_name),
+    values: categoriesData.map((c) => c.total_reviews)
+  };
 
-<option>Monthly</option>
-<option>Weekly</option>
-<option>Daily</option>
+  const sentimentBarData = {
+    labels: Object.keys(globalSentiment).map(
+      (k) => k.charAt(0).toUpperCase() + k.slice(1)
+    ),
+    values: Object.values(globalSentiment)
+  };
 
-</select>
+  const sentimentColors = Object.keys(globalSentiment).map((k) =>
+    k === "positive" ? "#22c55e"
+    : k === "negative" ? "#ef4444"
+    : "#facc15"
+  );
 
-</div>
+  const clusterBarData = {
+    labels: top6Clusters.map((c) => c.name),
+    values: top6Clusters.map((c) => c.reviews)
+  };
 
-{/* TREND */}
+  const segmentHealthData = {
+    labels: healthEntries.map(([k]) => k.charAt(0).toUpperCase() + k.slice(1)),
+    values: healthEntries.map(([, v]) => v)
+  };
 
-<div className="bg-black/40 ml-16 backdrop-blur-md border border-white/10 p-6 rounded-xl mb-10 hover:border-green-400 transition">
+  const segmentHealthColors = healthEntries.map(([health]) =>
+    health === "positive" ? "#22c55e"
+    : health === "concerning" ? "#ef4444"
+    : "#facc15"
+  );
 
-<LineChart data={trendData}/>
+  const insights = [
+    topCategory
+      ? `${topCategory.display_name} leads with ${topCategory.total_reviews.toLocaleString()} reviews.`
+      : null,
+    `${positivePct}% positive and ${negativePct}% negative sentiment across all segments.`,
+    `${allClusters.length} customer segments across ${categoriesData.length} categories.`,
+    top6Clusters[0]
+      ? `"${top6Clusters[0].name}" is the most reviewed segment (${top6Clusters[0].reviews.toLocaleString()} reviews).`
+      : null,
+    top8Topics[0]
+      ? `"${top8Topics[0][0]}" is the most discussed topic with ${top8Topics[0][1].count.toLocaleString()} reviews.`
+      : null,
+  ].filter(Boolean);
 
-</div>
+  if (loading) {
+    return (
+      <div className="p-10 text-white bg-[#020617] min-h-screen flex items-center justify-center">
+        <p className="text-green-400 text-xl animate-pulse">Loading dashboard...</p>
+      </div>
+    );
+  }
 
-{/* CHART GRID */}
+  if (error) {
+    return (
+      <div className="p-10 text-white bg-[#020617] min-h-screen flex items-center justify-center">
+        <p className="text-red-400 text-xl">{error}</p>
+      </div>
+    );
+  }
 
-<div className="ml-16 grid grid-cols-2 gap-8">
+  return (
+    <div className="p-10 text-white bg-[#020617] min-h-screen">
 
-{/* RATING */}
+      <h1 className="ml-16 text-3xl font-bold mb-2 text-green-400">
+        Exploratory Data Analysis
+      </h1>
+      <p className="ml-16 text-gray-500 text-sm mb-10">
+        Live data from{" "}
+        <span className="text-green-500/70">/categories</span> +{" "}
+        <span className="text-green-500/70">/segments</span>
+      </p>
 
-<div className="bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-xl hover:border-green-400 transition">
+      {/* KPI CARDS */}
+      <div className="ml-16 grid grid-cols-4 gap-6 mb-10">
+        <KpiCard title="Total Reviews" value={totalReviews.toLocaleString()} />
+        <KpiCard title="Positive Sentiment" value={`${positivePct}%`} />
+        <KpiCard title="Negative Sentiment" value={`${negativePct}%`} />
+        <KpiCard title="Top Category" value={topCategory?.display_name || "—"} />
+      </div>
 
-<h3 className="mb-4 text-lg text-green-400">
-Rating Distribution
-</h3>
+      {/* CHART GRID */}
+      <div className="ml-16 grid grid-cols-2 gap-8">
 
-<BarChart data={ratingData}/>
+        {/* CATEGORY SHARE — Pie */}
+        <div className="bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-xl hover:border-green-400 transition">
+          <h3 className="mb-1 text-lg text-green-400">Category Share</h3>
+          <p className="text-xs text-gray-500 mb-4">Review volume per product category</p>
+          <PieChart data={categoryData} />
+        </div>
 
-</div>
+        {/* SENTIMENT DISTRIBUTION — Bar */}
+        <div className="bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-xl hover:border-green-400 transition">
+          <h3 className="mb-1 text-lg text-green-400">Sentiment Distribution</h3>
+          <p className="text-xs text-gray-500 mb-4">Aggregated sentiment counts across all segments</p>
+          <BarChart data={sentimentBarData} backgroundColors={sentimentColors} />
+        </div>
 
-{/* CATEGORY */}
+        {/* TOPIC FREQUENCY — replaces Word Frequency */}
+        <div className="bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-xl hover:border-green-400 transition">
+          <h3 className="mb-1 text-lg text-green-400">Top Topics by Review Volume</h3>
+          <p className="text-xs text-gray-500 mb-4">
+            Most discussed topics across all segments — sourced from <span className="text-green-500/60">/segments</span>
+          </p>
+          <BarChart data={topicFreqData} />
+        </div>
 
-<div className="bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-xl hover:border-green-400 transition">
+        {/* TOPIC POSITIVE SENTIMENT */}
+        <div className="bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-xl hover:border-green-400 transition">
+          <h3 className="mb-1 text-lg text-green-400">Positive Reviews per Topic</h3>
+          <p className="text-xs text-gray-500 mb-4">
+            Count of positive-sentiment reviews for top 6 topics
+          </p>
+          <BarChart data={topicSentimentPositive} />
+        </div>
 
-<h3 className="mb-4 text-lg text-green-400">
-Category Share
-</h3>
+        {/* TOPIC NEGATIVE SENTIMENT */}
+        <div className="bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-xl hover:border-red-400 transition">
+          <h3 className="mb-1 text-lg text-red-400">Negative Reviews per Topic</h3>
+          <p className="text-xs text-gray-500 mb-4">
+            Count of negative-sentiment reviews for top 6 topics
+          </p>
+          <BarChart
+            data={topicSentimentNegative}
+            backgroundColors={top6Topics.map(() => "#ef4444")}
+          />
+        </div>
 
-<PieChart data={categoryData}/>
+        {/* TOP 6 SEGMENTS */}
+        <div className="bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-xl hover:border-green-400 transition">
+          <h3 className="mb-1 text-lg text-green-400">Top 6 Segments by Reviews</h3>
+          <p className="text-xs text-gray-500 mb-4">Highest volume customer segments</p>
+          <BarChart data={clusterBarData} />
+        </div>
 
-</div>
+        {/* SEGMENT HEALTH */}
+        <div className="bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-xl hover:border-green-400 transition">
+          <h3 className="mb-1 text-lg text-green-400">Segment Health Breakdown</h3>
+          <p className="text-xs text-gray-500 mb-4">Number of segments by health status</p>
+          <BarChart data={segmentHealthData} backgroundColors={segmentHealthColors} />
+        </div>
 
-{/* WORDS */}
+        {/* KEY INSIGHTS — full width */}
+        <div className="col-span-2 bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-xl hover:border-green-400 transition">
+          <h3 className="mb-4 text-lg text-green-400">Key Insights</h3>
+          <ul className="text-gray-300 space-y-2 text-sm list-disc list-inside">
+            {insights.map((insight, i) => (
+              <li key={i}>{insight}</li>
+            ))}
+          </ul>
+        </div>
 
-<div className="bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-xl hover:border-green-400 transition">
+      </div>
+    </div>
+  );
+};
 
-<h3 className="mb-4 text-lg text-green-400">
-Top Review Keywords
-</h3>
-
-<BarChart data={wordData}/>
-
-</div>
-
-{/* INSIGHTS */}
-
-<div className="bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-xl hover:border-green-400 transition">
-
-<h3 className="mb-4 text-lg text-green-400">
-Key Insights
-</h3>
-
-<ul className="text-gray-300 space-y-2 text-sm">
-
-<li>Electronics receives the highest review volume.</li>
-<li>Ratings are heavily skewed toward 4★ and 5★.</li>
-<li>Battery and price appear most frequently in reviews.</li>
-<li>Review volume increased steadily in recent months.</li>
-
-</ul>
-
-</div>
-
-</div>
-
-</div>
-
-)
-
-}
-
-export default EDADashboard
+export default EDADashboard;
