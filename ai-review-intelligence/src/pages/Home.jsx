@@ -196,27 +196,37 @@ const Home = () => {
             Dataset Overview
           </h2>
 
-          <div className="grid grid-cols-4 gap-8 text-center">
-            {[
-              { label: "Total Reviews", value: "12,580" },
-              { label: "Fields Used", value: "" },
-              { label: "Data Source", value: "" }
-            ].map(({ label, value }, i) => (
-              <div
-                key={i}
-                className="border border-gray-800 p-8 rounded hover:border-green-500/50
-                  transition-all duration-300 bg-black/30 hover:bg-green-500/5
-                  hover:shadow-lg hover:shadow-green-500/10 group"
-              >
-                <p className="text-gray-400 text-sm mb-2">{label}</p>
-                {value && (
-                  <h3 className="text-3xl font-bold text-green-500 group-hover:scale-110 transition-transform duration-300 inline-block">
-                    {value}
-                  </h3>
-                )}
-              </div>
-            ))}
-          </div>
+         <div className="grid grid-cols-4 gap-8 text-center">
+  {[
+    { label: "Total Reviews", value: "271298", isNumber: true },
+    {
+      label: "Fields Used",
+      value:
+        "Review ID, Parent ASIN, Text, Rating, Title, Verification of Purchase, Category"
+    },
+    {
+      label: "Data Source",
+      value:
+        "Amazon reviews dataset collected originally by McAuley Lab in 2023"
+    }
+  ].map(({ label, value, isNumber }, i) => (
+    <div
+      key={i}
+      className="border border-gray-800 p-8 rounded hover:border-green-500/50
+      transition-all duration-300 bg-black/30 hover:bg-green-500/5
+      hover:shadow-lg hover:shadow-green-500/10 group"
+    >
+      <p className="text-gray-400 text-sm mb-2">{label}</p>
+
+      <h3
+        className={`text-green-500 transition-transform duration-300 group-hover:scale-110
+        ${isNumber ? "text-3xl font-bold" : "text-sm break-words whitespace-normal"}`}
+      >
+        {value}
+      </h3>
+    </div>
+  ))}
+</div>
         </section>
 
         {/* TECH STACK */}

@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import KpiCard from "../components/cards/KpiCard";
 import BarChart from "../components/charts/BarChart";
 import PieChart from "../components/charts/PieChart";
+import umapImage from "../assets/Umap_projection.jpeg";
+import silhouetteImage from "../assets/Silhoutte_score.jpeg";
+import hdbscanImage from "../assets/Hdbscan_tree.jpeg";
 
 const EDADashboard = () => {
   const [categoriesData, setCategoriesData] = useState([]);
@@ -197,11 +200,6 @@ const EDADashboard = () => {
       <h1 className="ml-16 text-3xl font-bold mb-2 text-green-400">
         Exploratory Data Analysis
       </h1>
-      <p className="ml-16 text-gray-500 text-sm mb-10">
-        Live data from{" "}
-        <span className="text-green-500/70">/categories</span> +{" "}
-        <span className="text-green-500/70">/segments</span>
-      </p>
 
       {/* KPI CARDS */}
       <div className="ml-16 grid grid-cols-4 gap-6 mb-10">
@@ -271,6 +269,57 @@ const EDADashboard = () => {
           <p className="text-xs text-gray-500 mb-4">Number of segments by health status</p>
           <BarChart data={segmentHealthData} backgroundColors={segmentHealthColors} />
         </div>
+
+        {/* ── UMAP 2D PROJECTION ───────────────────────── */}
+<div className="bg-black/40 border border-white/10 p-6 rounded-xl hover:border-green-400 transition">
+  <h2 className="text-xl mb-1 text-green-400">UMAP 2D Projection of Product Reviews</h2>
+  <p className="text-xs text-gray-500 mb-4">
+    Each point is a customer review embedded via SentenceTransformer (768-dim) 
+    and reduced to 2D using UMAP. Colors represent product categories. 
+    Spatial clusters reflect semantic similarity in review language.
+  </p>
+  <div className="w-full rounded-xl overflow-hidden border border-white/5">
+    <img
+      src={umapImage}
+      alt="UMAP 2D Projection"
+      className="w-full object-contain"
+    />
+  </div>
+</div>
+
+{/* ── SILHOUETTE SCORES ────────────────────────── */}
+<div className="bg-black/40 border border-white/10 p-6 rounded-xl hover:border-green-400 transition">
+  <h2 className="text-xl mb-1 text-green-400">Silhouette Score vs k — KMeans Super-Cluster Selection</h2>
+  <p className="text-xs text-gray-500 mb-4">
+    Silhouette scores evaluated across different values of k (number of super-clusters) 
+    per category. The selected k (★) maximises cluster separation and cohesion. 
+    Higher score = better defined clusters.
+  </p>
+  <div className="w-full rounded-xl overflow-hidden border border-white/5">
+    <img
+      src={silhouetteImage}
+      alt="Silhouette Score vs K"
+      className="w-full object-contain"
+    />
+  </div>
+</div>
+
+{/* ── HDBSCAN CONDENSED TREE ───────────────────── */}
+<div className="bg-black/40 border border-white/10 p-6 rounded-xl hover:border-green-400 transition">
+  <h2 className="text-xl mb-1 text-green-400">HDBSCAN Condensed Tree — Cluster Formation Hierarchy</h2>
+  <p className="text-xs text-gray-500 mb-4">
+    The condensed tree shows how clusters form and persist across density levels (Lambda = 1/distance). 
+    Red highlighted branches are the selected final clusters. 
+    Colour intensity represents the number of data points in each branch.
+  </p>
+  <div className="w-full rounded-xl overflow-hidden border border-white/5">
+    <img
+      src={hdbscanImage}
+      alt="HDBSCAN Condensed Tree"
+      className="w-full object-contain"
+    />
+  </div>
+</div>
 
         {/* KEY INSIGHTS — full width */}
         <div className="col-span-2 bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-xl hover:border-green-400 transition">

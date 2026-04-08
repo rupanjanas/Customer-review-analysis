@@ -25,7 +25,7 @@ const BarChart = ({ data }) => {
     datasets: [
       {
         label: "Reviews",
-        data: data.values,
+        data: data.values.map(v => Number(v.toFixed(2))),
         backgroundColor: "#22c55e",   // green instead of default blue
         borderRadius: 4
       }
@@ -41,12 +41,17 @@ const BarChart = ({ data }) => {
         }
       },
       tooltip: {
-        backgroundColor: "#020617",
-        borderColor: "#22c55e",
-        borderWidth: 1,
-        titleColor: "#22c55e",
-        bodyColor: "#e5e7eb"
-      }
+  backgroundColor: "#020617",
+  borderColor: "#22c55e",
+  borderWidth: 1,
+  titleColor: "#22c55e",
+  bodyColor: "#164FC0",
+  callbacks: {
+    label: function (context) {
+      return `Reviews: ${context.raw.toFixed(2)}`;
+    }
+  }
+}
     },
     scales: {
       x: {
@@ -59,14 +64,17 @@ const BarChart = ({ data }) => {
           color: "rgba(255,255,255,0.04)"
         }
       },
-      y: {
-        ticks: {
-          color: "#9ca3af"             // visible y-axis numbers
-        },
-        grid: {
-          color: "rgba(255,255,255,0.04)"
-        }
-      }
+     y: {
+  ticks: {
+    color: "#9ca3af",            // visible y-axis labels
+    callback: function (value) {
+      return value.toFixed(2);
+    }
+  },
+  grid: {
+    color: "rgba(255,255,255,0.04)"
+  }
+}
     }
   };
 
