@@ -69,11 +69,6 @@ const getHealthScore = (sentDist) => {
   return total > 0 ? parseFloat(((pos / total) * 100).toFixed(1)) : 0;
 };
 
-// Positive % of total sentiment
-const getPositivePct = (sentDist) => {
-  const total = Object.values(sentDist || {}).reduce((a, b) => a + b, 0);
-  return total > 0 ? parseFloat((((sentDist?.positive || 0) / total) * 100).toFixed(1)) : 0;
-};
 
 // Dominant sentiment label
 const getDominantSentiment = (sentDist) => {
@@ -127,56 +122,9 @@ const Segmentation = () => {
     fetchSegments();
   }, []);
 
-  // ── Chart: Bubble — x=index, y=positive%, r=scaled review count
-  const bubbleData = {
-    datasets: segments.map((seg, i) => ({
-      label: seg.super_cluster_name,
-      data: [{
-        x: i,
-        y: getPositivePct(seg.sentiment_distribution),
-        r: Math.max(6, Math.min(28, seg.total_reviews / 1500))
-      }],
-      backgroundColor: CLUSTER_COLORS[i % CLUSTER_COLORS.length] + "80",
-      borderColor: CLUSTER_COLORS[i % CLUSTER_COLORS.length],
-      borderWidth: 1.5
-    }))
-  };
+  
 
-  const bubbleOptions = {
-    plugins: {
-      legend: { display: false },
-      datalabels: { display: false },
-      tooltip: {
-        callbacks: {
-          label: (ctx) => {
-            const seg = segments[ctx.datasetIndex];
-            return [
-              ` ${seg.super_cluster_name}`,
-              ` Reviews: ${seg.total_reviews.toLocaleString()}`,
-              ` Positive: ${ctx.parsed.y}%`,
-              ` Health Score: ${getHealthScore(seg.sentiment_distribution)}%`
-            ];
-          }
-        }
-      }
-    },
-    scales: {
-      x: {
-        ticks: {
-          color: "#9ca3af",
-          callback: (val) => segments[val]?.super_cluster_name?.split(" ")[0] || ""
-        },
-        grid: { color: "rgba(255,255,255,0.04)" },
-        title: { display: true, text: "Segment Index", color: "#6b7280" }
-      },
-      y: {
-        min: 0, max: 100,
-        ticks: { color: "#9ca3af", callback: (v) => `${v}%` },
-        grid: { color: "rgba(255,255,255,0.04)" },
-        title: { display: true, text: "Positive Sentiment %", color: "#6b7280" }
-      }
-    }
-  };
+ 
 
   // ── Chart: Cluster sizes bar
   const clusterSizeData = {
@@ -343,7 +291,7 @@ const Segmentation = () => {
 
         {/* Segment selector tabs */}
         <div className="flex flex-wrap gap-2">
-          {segments.map((seg, i) => (
+          {segments.map((seg) => (
             <button
               key={seg.sc_key}
               onClick={() => setSelectedSegment(seg)}
@@ -362,9 +310,6 @@ const Segmentation = () => {
         {selectedSegment && (() => {
           const idx = segments.findIndex((s) => s.sc_key === selectedSegment.sc_key);
           const color = CLUSTER_COLORS[idx % CLUSTER_COLORS.length];
-          const topTopics = [...(selectedSegment.topics || [])]
-            .sort((a, b) => b.review_count - a.review_count)
-            .slice(0, 5);
           const compliment = getTopComplimentTopic(selectedSegment.topics);
           const complaint = getTopComplaintTopic(selectedSegment.topics);
           const dominant = getDominantSentiment(selectedSegment.sentiment_distribution);

@@ -7,7 +7,6 @@ import review from "../assets/undraw_leave-a-review_uj9v.png";
 
 const Home = () => {
   const canvasRef = useRef(null);
-
   // Animated particle background
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -129,7 +128,7 @@ const Home = () => {
 
           <div className="flex justify-center ml-10">
             <div className="relative group">
-              <div className="absolute -inset-1 bg-gradient-to-r from-green-500/30 to-teal-500/20 rounded-xl blur-lg opacity-60 group-hover:opacity-100 transition duration-500" />
+              <div className="absolute -inset-1 bg-linear-to-r from-green-500/30 to-teal-500/20 rounded-xl blur-lg opacity-60 group-hover:opacity-100 transition duration-500" />
               <img
                 src="https://images.unsplash.com/photo-1551288049-bebda4e38f71"
                 className="relative rounded-xl shadow-xl transition-transform duration-500 group-hover:scale-[1.02]"
@@ -140,7 +139,7 @@ const Home = () => {
 
         {/* PROBLEM */}
         <section className="px-16 py-20 border-b border-gray-800 ml-10 relative">
-          <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-transparent via-green-500/40 to-transparent" />
+          <div className="absolute left-0 top-0 h-full w-1 bg-linear-to-b from-transparent via-green-500/40 to-transparent" />
           <p className="text-gray-400 max-w-3xl leading-relaxed text-lg">
             Businesses receive thousands of customer reviews across e-commerce
             platforms and digital products. Extracting meaningful insights from
@@ -220,7 +219,7 @@ const Home = () => {
 
       <h3
         className={`text-green-500 transition-transform duration-300 group-hover:scale-110
-        ${isNumber ? "text-3xl font-bold" : "text-sm break-words whitespace-normal"}`}
+        ${isNumber ? "text-3xl font-bold" : "text-sm wrap-break-word whitespace-normal"}`}
       >
         {value}
       </h3>
@@ -248,7 +247,7 @@ const Home = () => {
                   transition-all duration-300 group relative overflow-hidden
                   hover:shadow-lg hover:shadow-green-500/10"
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent
+                <div className="absolute inset-0 bg-linear-to-br from-green-500/5 to-transparent
                   opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 <h3 className="font-semibold mb-2 text-white group-hover:text-green-400 transition-colors duration-300 relative z-10">
                   {title}

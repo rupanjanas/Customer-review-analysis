@@ -70,7 +70,7 @@ const LiveAnalyzer = () => {
 
       const data = await res.json();
       setResult(data);
-    } catch (err) {
+    } catch {
       setError("Network error. Please try again.");
     } finally {
       setLoading(false);

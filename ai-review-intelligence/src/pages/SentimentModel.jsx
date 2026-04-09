@@ -71,9 +71,6 @@ const SentimentModel = () => {
 
   // --- Chart data: empty when no result, populated after prediction ---
 
-  const sentimentLabels = result
-    ? Object.keys(result.predictions ? { positive: 0, negative: 0, neutral: 0 } : {})
-    : [];
 
   // Accuracy chart — always visible as model overview (static)
   const accuracyData = {

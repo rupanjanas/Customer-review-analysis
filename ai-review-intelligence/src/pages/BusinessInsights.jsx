@@ -95,16 +95,6 @@ const BusinessInsights = () => {
     ]
   };
 
-  const chartOptions = {
-    plugins: {
-      legend: { labels: { color: "#e5e7eb" } },
-      datalabels: { display: false }
-    },
-    scales: {
-      x: { ticks: { color: "#9ca3af" }, grid: { color: "rgba(255,255,255,0.04)" } },
-      y: { ticks: { color: "#9ca3af" }, grid: { color: "rgba(255,255,255,0.04)" } }
-    }
-  };
 
   const pieOptions = {
     plugins: {
